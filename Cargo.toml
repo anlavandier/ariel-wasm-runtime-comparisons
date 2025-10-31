@@ -1,0 +1,29 @@
+[package]
+name = "ariel-runtime-size-comparisons"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["alloc"] }
+ariel-os-boards = { path = "build/imports/ariel-os/src/ariel-os-boards" }
+
+
+wasmtime = {version = "=38.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true}
+wasmi = { version = "=0.51.1", default-features = false, optional = true }
+
+wasm-interpreter = { path = "../wasm-interpreter", default-features = false, features = ["hooks"], optional = true}
+
+# wasm3 = {version = "=0.3.1", default-features = false, features = ["build-bindgen"], optional = false}
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(context, values(any()))',
+] }
+
+
+[features]
+wasmtime = ["dep:wasmtime"]
+wasmi = ["dep:wasmi"]
+wasm-interpreter = ["dep:wasm-interpreter"]
+
+# default = ["wasmtime"]

@@ -1,0 +1,27 @@
+imports:
+  - git:
+      url: https://github.com/ariel-os/ariel-os
+      branch: main
+    dldir: ariel-os
+
+apps:
+  - name: ariel-runtime-size-comparisons
+  - selects:
+    - alloc
+
+modules:
+  - name: wasmtime
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/wasmtime
+  - name: wasmi
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/wasmi
+  - name: wasm-interpreter
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/wasm-interpreter

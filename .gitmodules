@@ -1,0 +1,3 @@
+[submodule "crates/wasm-interpreter"]
+	path = crates/wasm-interpreter
+	url = https://github.com/DLR-FT/wasm-interpreter
