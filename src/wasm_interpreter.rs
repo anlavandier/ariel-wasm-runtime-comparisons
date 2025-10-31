@@ -1,10 +1,10 @@
-use wasm::{validate, RuntimeInstance, Value};
+use wasm::{validate, RuntimeInstance, Value, HaltExecutionError};
 
 extern crate alloc;
 use alloc::vec::Vec;
 
-fn extra(_: &mut (), _: Vec<Value>) -> Vec<Value> {
-    Vec::from_iter(core::iter::once(Value::I32(100)))
+fn extra(_: &mut (), _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    Ok(Vec::from_iter(core::iter::once(Value::I32(100))))
 }
 
 pub fn run_wasm(a: u32, b:u32, _c: u32) -> u32{

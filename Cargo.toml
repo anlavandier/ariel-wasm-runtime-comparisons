@@ -11,7 +11,7 @@ ariel-os-boards = { path = "build/imports/ariel-os/src/ariel-os-boards" }
 wasmtime = {version = "=38.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true}
 wasmi = { version = "=0.51.1", default-features = false, optional = true }
 
-wasm-interpreter = { path = "../wasm-interpreter", default-features = false, features = ["hooks"], optional = true}
+wasm-interpreter = { path = "crates/wasm-interpreter", default-features = false, optional = true}
 
 # wasm3 = {version = "=0.3.1", default-features = false, features = ["build-bindgen"], optional = false}
 
