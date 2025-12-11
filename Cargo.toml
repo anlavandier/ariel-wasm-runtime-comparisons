@@ -4,16 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["alloc"] }
+ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["alloc", "time"] }
 ariel-os-boards = { path = "build/imports/ariel-os/src/ariel-os-boards" }
 
-
-wasmtime = {version = "=38.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true}
+# Runtimes to evaluate
+wasmtime = {version = "=38.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true }
 wasmi = { version = "=0.51.1", default-features = false, optional = true }
+wasm-interpreter = {git = "https://github.com/DLR-FT/wasm-interpreter", rev = "4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f", default-features = false, optional = true }
 
-wasm-interpreter = { path = "crates/wasm-interpreter", default-features = false, optional = true}
-
-# wasm3 = {version = "=0.3.1", default-features = false, features = ["build-bindgen"], optional = false}
+libm = { version = "0.2.15", optional = true }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
@@ -25,5 +24,6 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 wasmtime = ["dep:wasmtime"]
 wasmi = ["dep:wasmi"]
 wasm-interpreter = ["dep:wasm-interpreter"]
-
-# default = ["wasmtime"]
+coremark = []
+embench-1 = ["dep:libm"]
+minimal = []

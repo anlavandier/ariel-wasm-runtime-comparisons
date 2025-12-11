@@ -9,12 +9,20 @@ apps:
   - selects:
     - alloc
 
+
 modules:
   - name: wasmtime
     env:
       global:
         FEATURES:
           - ariel-runtime-size-comparisons/wasmtime
+  - name: wasmtime-no-simd
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/wasmtime
+        RUSTFLAGS:
+          - --cfg pulley_disable_interp_simd
   - name: wasmi
     env:
       global:
@@ -25,3 +33,18 @@ modules:
       global:
         FEATURES:
           - ariel-runtime-size-comparisons/wasm-interpreter
+  - name: coremark
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/coremark
+  - name: embench-1.0
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/embench-1
+  - name: minimal-size
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/minimal

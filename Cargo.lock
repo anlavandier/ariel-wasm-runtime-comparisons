@@ -111,6 +111,8 @@ dependencies = [
  "embassy-nrf",
  "embassy-stm32",
  "embassy-sync 0.6.2",
+ "embassy-time",
+ "embassy-time-queue-utils",
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-io 0.6.1",
@@ -300,6 +302,7 @@ version = "0.1.0"
 dependencies = [
  "ariel-os",
  "ariel-os-boards",
+ "libm",
  "wasm-interpreter",
  "wasmi",
  "wasmtime",
@@ -1717,6 +1720,7 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 [[package]]
 name = "log_wrapper"
 version = "0.1.0"
+source = "git+https://github.com/DLR-FT/wasm-interpreter?rev=4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f#4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f"
 
 [[package]]
 name = "mach2"
@@ -2695,6 +2699,7 @@ dependencies = [
 [[package]]
 name = "wasm-interpreter"
 version = "0.1.0"
+source = "git+https://github.com/DLR-FT/wasm-interpreter?rev=4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f#4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f"
 dependencies = [
  "libm",
  "log_wrapper",
