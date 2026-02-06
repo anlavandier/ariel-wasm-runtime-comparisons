@@ -4,15 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["alloc", "time"] }
+ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["time", "alloc"] }
 ariel-os-boards = { path = "build/imports/ariel-os/src/ariel-os-boards" }
 
 # Runtimes to evaluate
 wasmtime = {version = "=38.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true }
 wasmi = { version = "=0.51.1", default-features = false, optional = true }
 wasm-interpreter = {git = "https://github.com/DLR-FT/wasm-interpreter", rev = "4ad71b14889597a0aa1c7a5e0d80c4e0e9b7e30f", default-features = false, optional = true }
-
+wamr-rust-sdk = { path = "third_party/wamr-rust-sdk", default-features = false, optional = true }
 libm = { version = "0.2.15", optional = true }
+tinyrlibc = {version = "*", optional = true }
+
+ariel-os-alloc = { path  = "build/imports/ariel-os/src/ariel-os-alloc", optional = true }
+critical-section = {version = "1.0", optional = true }
+
+
+[target.'cfg(context = "esp")'.dependencies]
+esp-alloc = { path = "third_party/esp-hal/esp-alloc" }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
@@ -26,4 +34,6 @@ wasmi = ["dep:wasmi"]
 wasm-interpreter = ["dep:wasm-interpreter"]
 coremark = []
 embench-1 = ["dep:libm"]
-minimal = []
+wamr-fast = ["wamr", "wamr-rust-sdk/fast"]
+wamr = ["dep:wamr-rust-sdk", "dep:tinyrlibc"]
+monitor-heap = ["ariel-os-alloc/expose-allocator", "dep:critical-section"]
