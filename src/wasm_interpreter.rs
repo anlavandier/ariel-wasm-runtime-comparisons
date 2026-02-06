@@ -3,30 +3,6 @@ use wasm::{validate, RuntimeInstance, Value, HaltExecutionError};
 extern crate alloc;
 use alloc::vec::Vec;
 
-#[cfg(feature = "minimal")]
-fn extra(_: &mut (), _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-    Ok(Vec::from_iter(core::iter::once(Value::I32(100))))
-}
-
-#[cfg(feature = "minimal")]
-pub fn run_wasm() {
-    let wasm_bytes = include_bytes!("../payload-wasm/input.wasm");
-
-    let validation_info = validate(wasm_bytes).unwrap();
-
-    let mut instance = RuntimeInstance::new(());
-
-    instance.add_host_function_typed::<(), u32>("host", "extra", extra).unwrap();
-
-    instance.add_module("module", &validation_info).unwrap();
-
-    let res: u32 = instance.invoke_typed(
-        &instance.get_function_by_name("module", "add_with_extra").unwrap(),
-        (28, 16)).unwrap();
-    assert_eq!(res, 28 + 16 + 100);
-}
-
-
 #[cfg(feature = "coremark")]
 fn clock_ms(_: &mut (), _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
     Ok(Vec::from_iter(core::iter::once(Value::I64(ariel_os::time::Instant::now().as_millis()))))
@@ -54,7 +30,7 @@ pub fn run_coremark() -> f32 {
 pub mod embench1 {
     use ariel_os::time::Instant;
     use libm::{pow, exp, log, sqrt};
-    use ariel_os::debug::log::{info, debug, error};
+    use ariel_os::debug::log::{debug, error};
 
     use super::*;
     use crate::{BENCH_SCORE, BENCHMARK_LOOPS, benchmark_name, benchmark_file};
@@ -65,7 +41,7 @@ pub mod embench1 {
 
     impl Config for TimeTracking {}
 
-    pub fn run_bench() {
+    pub fn run_bench() -> (f64, f64, f64, f64) {
         let bench_name = benchmark_name!();
         let wasm = include_bytes!(benchmark_file!());
 
@@ -93,7 +69,7 @@ pub mod embench1 {
                 },
                 _ => {
                     error!("Benchmarking went wrong for some reason, aborting");
-                    return;
+                    return (0_f64, 0_f64, 0_f64, 0_f64);
                 }
             }
         }
@@ -131,7 +107,7 @@ pub mod embench1 {
         debug!("Geometric Standard Deviation Time: {}", times_geo_std);
         debug!("Range(ms): [{}, {}]", times_geo_mean / times_geo_std, times_geo_mean * times_geo_std);
 
-        info!("{}, {}, {}; {}, {}", bench_name, geo_mean, geo_std, times_geo_mean, times_geo_std);
+        (geo_mean, geo_std, times_geo_mean, times_geo_std)
     }
 
     fn initialise_board(_: &mut TimeTracking, _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {

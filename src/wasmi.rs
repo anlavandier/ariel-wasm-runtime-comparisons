@@ -1,32 +1,5 @@
 use wasmi::{Caller, Config, Engine, Linker, Module, Store};
 
-#[cfg(feature = "minimal")]
-pub fn run_wasm() {
-
-    let wasm = include_bytes!("../payload-wasm/input.wasm");
-
-    let mut config = Config::default();
-
-    config.floats(false);
-
-    let engine = Engine::new(&config);
-    let mut store = Store::new(&engine, ());
-
-    let module = unsafe { Module::new_unchecked(&engine, wasm).unwrap() };
-
-    let mut linker = Linker::new(&engine);
-
-    linker.func_wrap("host", "extra", move |_: Caller<'_, _>| { 100 }).unwrap();
-
-    let instance = linker.instantiate_and_start(&mut store, &module).unwrap();
-
-    let res = instance.get_typed_func::<(u32, u32), u32>(&mut store, "add_with_extra").unwrap()
-        .call(&mut store, (28, 16)).unwrap();
-
-    assert_eq!(res, 28 + 16 + 100);
-}
-
-
 #[cfg(feature = "coremark")]
 pub fn run_coremark() -> f32 {
 
@@ -55,7 +28,7 @@ pub fn run_coremark() -> f32 {
 pub mod embench1 {
     use ariel_os::time::Instant;
     use libm::{pow, exp, log, sqrt};
-    use ariel_os::debug::log::{info, debug, error};
+    use ariel_os::debug::log::{debug, error};
 
     use super::*;
     use crate::{BENCH_SCORE, BENCHMARK_LOOPS, benchmark_name, benchmark_file};
@@ -63,7 +36,7 @@ pub mod embench1 {
     extern crate alloc;
     use alloc::vec::Vec;
 
-    pub fn run_bench() {
+    pub fn run_bench() -> (f64, f64, f64, f64) {
         let bench_name = benchmark_name!();
         let wasm = include_bytes!(benchmark_file!());
 
@@ -102,7 +75,7 @@ pub mod embench1 {
                 },
                 _ => {
                     error!("Benchmarking went wrong for some reason, aborting");
-                    return;
+                    return (0_f64, 0_f64, 0_f64, 0_f64);
                 }
             }
         }
@@ -140,6 +113,6 @@ pub mod embench1 {
         debug!("Geometric Standard Deviation Time: {}", times_geo_std);
         debug!("Range(ms): [{}, {}]", times_geo_mean / times_geo_std, times_geo_mean * times_geo_std);
 
-        info!("{}, {}, {}; {}, {}", bench_name, geo_mean, geo_std, times_geo_mean, times_geo_std);
+        (geo_mean, geo_std, times_geo_mean, times_geo_std)
     }
 }

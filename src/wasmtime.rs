@@ -1,48 +1,5 @@
 use wasmtime::{Caller, Config, Engine, Linker, Module, Store};
 
-#[cfg(feature = "minimal")]
-pub fn run_wasm() {
-    let wasm_input = include_bytes!("../payload-cwasm/input.cwasm");
-
-
-    let mut config = Config::new();
-
-    // Options that must conform with the precompilation step
-    config.target("pulley32").unwrap();
-
-    config.table_lazy_init(false);
-    config.memory_reservation(0);
-    config.memory_init_cow(false);
-    config.memory_may_move(false);
-
-    // Options that can be changed without changing the payload
-    config.max_wasm_stack(2048);
-    config.memory_reservation_for_growth(0);
-
-
-    let engine = Engine::new(&config).unwrap();
-
-    let mut store = Store::new(&engine, ());
-
-    // SAFETY: This is a known input produced by Engine::precompile_module
-    // Also, deserialize_raw reuse the given memory instead of copying it.
-    let module = unsafe { Module::deserialize_raw(&engine, wasm_input.as_slice().into()).unwrap() };
-
-    let mut linker = Linker::new(&engine);
-
-    // Define the imported host function
-    linker.func_wrap("host", "extra", move |_: Caller<'_, _>| { 100 }).unwrap();
-
-    // Instantiate the Module
-    let instance = linker.instantiate(&mut store, &module).unwrap();
-
-    // call add_with_extra
-    let res = instance.get_typed_func::<(u32, u32), u32>(&mut store, "add_with_extra").unwrap()
-        .call(&mut store, (28, 16)).unwrap();
-
-    assert_eq!(res, 28 + 16 + 100);
-}
-
 #[cfg(feature = "coremark")]
 pub fn run_coremark() -> f32 {
     let wasm_input = include_bytes!(crate::benchmark_file!());
@@ -89,7 +46,7 @@ pub fn run_coremark() -> f32 {
 pub mod embench1 {
     use ariel_os::time::Instant;
     use libm::{pow, exp, log, sqrt};
-    use ariel_os::debug::log::{info, debug, error};
+    use ariel_os::debug::log::{debug, error};
 
     use super::*;
     use crate::{BENCH_SCORE, BENCHMARK_LOOPS, benchmark_name, benchmark_file};
@@ -97,7 +54,7 @@ pub mod embench1 {
     extern crate alloc;
     use alloc::vec::Vec;
 
-    pub fn run_bench() {
+    pub fn run_bench() -> (f64, f64, f64, f64) {
         let bench_name = benchmark_name!();
         let wasm = include_bytes!(benchmark_file!());
 
@@ -150,7 +107,7 @@ pub mod embench1 {
                 },
                 _ => {
                     error!("Benchmarking went wrong for some reason, aborting");
-                    return;
+                    return (0_f64, 0_f64, 0_f64, 0_f64);
                 }
             }
         }
@@ -188,7 +145,7 @@ pub mod embench1 {
         debug!("Geometric Standard Deviation Time: {}", times_geo_std);
         debug!("Range(ms): [{}, {}]", times_geo_mean / times_geo_std, times_geo_mean * times_geo_std);
 
-        info!("{}, {}, {}; {}, {}", bench_name, geo_mean, geo_std, times_geo_mean, times_geo_std);
+        (geo_mean, geo_std, times_geo_mean, times_geo_std)
     }
 }
 
