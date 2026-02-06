@@ -1,53 +1,34 @@
 # Comparing WebAssembly Runtimes of Ariel OS
 
-This repository aims to help in reproducibly benchmarking WebAssembly runtimes in the context of Ariel OS both in terms of code size and performance.
+This repository aims to help in reproducibly benchmarking WebAssembly runtimes in the context of Ariel OS both in terms of code size and performance. Please first get introduced with Ariel OS by [getting started](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html). This uses a local (and modified) version of Ariel OS so only [Installing the build prerequisite](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html#installing-the-build-prerequisites) is required.
 
-## Comparing Sizes
+## Setup
+
+### Runtimes tested
+
+- [Wasmtime](github.com/bytecodealliance/wasmtime) with and without SIMD enabled in its interpreter Pulley
+- [Wasmi](https://github.com/wasmi-labs/wasmi)
+- [Wasm-interpreter](https://github.com/DLR-FT/wasm-interpreter)
+- [WAMR](github.com/bytecodealliance/wasm-micro-runtime) with the regular and Fast Interpreters
+
+### Hardware considered
+Board Name / MCU / Architecture:
+
+- Pico 2W / RP2350 / ARM THUMBV8
+- nRF52840DK / nRF52840 / ARM THUMBV7
+- DFRobot Firebeetle 2 / ESP32-C6 / RISCV 32
+- ESP-WROOM-32 / ESP-WROOM-32 / Xtensa
+
+### Benchmarks used
+
+- [CoreMark 1.0] using its wasm port found [here](github.com/wasm3/wasm-coremark)
+- The [Embench 1.0] suite compiled from C to Wasm by us using [emscripten].
+
+## Comparing Flash size
 
 ### Protocol
-To compare the size of the resulting binary from each runtime, they will all be evaluted using a minimal capsule. Below is the code of the aforementioned capsule.
-```rust
-#![no_std]
 
-#[link(wasm_import_module = "host")]
-unsafe extern "C" {
-    fn extra() -> u32;
-}
-
-
-#[unsafe(no_mangle)]
-extern "C" fn add_with_extra(a: u32, b: u32) -> u32 {
-    a + b + unsafe { extra() }
-}
-
-#[panic_handler]
-fn panic_handler(_: &core::panic::PanicInfo<'_>) -> ! {
-    core::arch::wasm32::unreachable();
-}
-```
-
-It will be compiled for the `wasm32v1-none` target using the following `.cargo/config.toml` for maximal binary size optimizations.
-
-```toml
-[unstable]
-build-std = ["core", "alloc", "panic_abort"]
-build-std-features = ["optimize_for_size", "panic_immediate_abort"]
-
-[build]
-rustflags = [
-    "-Z", "location-detail=none",
-    "-C", "link-arg=--initial-memory=65356",
-    "-C", "link-arg=-zstack-size=4096"
-]
-target = "wasm32v1-none"
-
-[profile.release]
-opt-level= "z"
-codegen-units = 1
-lto = "fat"
-debug = false
-strip = "symbols"
-```
+Every runtimes will be evaluated using the CoreMark minimal port originally found [here](github.com/wasm3/wasm-coremark).
 
 For wasmtime, since it doesn't support raw wasm bytecode in `#![no_std]` contexts, an extra step of precompilation is needed. The following configuration is used for that step
 
@@ -87,43 +68,39 @@ fn main() -> wasmtime::Result<()> {
     Ok(())
 }
 ```
-(
-### Runtimes tested
-
-- [Wasmtime](github.com/bytecodealliance/wasmtime)
-- [Wasmi](https://github.com/wasmi-labs/wasmi)
-- [Wasm-interpreter](https://github.com/DLR-FT/wasm-interpreter)
-
-We originally wanted to also evaluate [`wasm3`](https://github.com/wasm3/wasm3) and [`wamr`](github.com/bytecodealliance/wasm-micro-runtime) through their rust bindings but were unable to compile the underlying C code.
-
-### Boards considered
-
-Tests were done mainly on the `nrf52840dk` and some of it was done on the `rpi-pico2-w`.
 
 ### Results
-Below are the results in bytes of the sizes of different sections of the compiled ELF, the size of the crates that are pulled by runtime, evaluated using `cargo-bloat` and the size that is flashed to the device as reported by `probe-rs`. All numbers come from compiling on the `nrf52840dk`
 
-|            | wasmi     | wasmtime  | wasm-interpreter |
-| ---------- | --------- | --------- | ---------------- |
-| `.text`    | 511,300 B | 264,548 B | 162,272 B        |
-| `.bss`     | 5,676 B   | 5,764 B   | 5,668 B          |
-| `.rodata`  | 79,544 B  | 54,916 B  | 16,940 B         |
-| `--crates` | 427,300 B | 175,300 B | 121,400 B        |
-| `probe-rs` | 580,000 B | 316,000 B | 176,000 B        |
+Raw results can be found for each archiecture under `results/<board-name>/static-size-coremark.txt`. Below is a graph compiling the results.
 
+<img width="1000" src="images/static-size.png">
 
+This graph was generated using a [python script](./scripts/plot_mem_size.py)
+
+## Comparing RAM usage
+
+### Protocol
+
+Every runtime was evaluated on every piece of the [Embench 1.0] benchmarks. Their peak usage was measured and was added to the size of the `.data` and `.bss` sections the ELF. Only the Pico2W was used because it was the only board where every runtime was able to run every benchmark snippet.
+
+### Results
+
+Raw results can be found under `results/pico2w/peakRAM-<runtime>.txt`. Below is a graph compiling the results.
+
+<img width="1000" src="images/peak-ram-pico2.png">
+
+This graph was generated using a [python script](./scripts/plot_ram_usage.py). The black dotted line corresponds the linear memory asked by the wasm modules.
 
 ## Comparing Performance
 
 ### Protocol
 
-We measured the performance of runtimes using two benchmarks [CoreMark 1.0] and [Embench 1.0]. To use these benchmarks written in C, we first had to obtain versions of them compiled to WebAssembly. For [CoreMark 1.0] we sourced it from [Wasm3's github](https://github.com/wasm3/wasm-coremark) for [Embench 1.0], we couldn't find already transpiled version and thus we did it ourselves by using [emscripten] to compile the individual benchmarks to WebAssembly then we turned them into equivalent WebAssembly Text (WAT) files to modify their memory requirements to only ask for 2 pages of 64Kb (instead of the 258 they were asking after compiling, which we weren't able to prevent when running [emscripten]) and then turned them back into WebAssembly bytecode. The resulting files are in the [benchmarks](./benchmarks/) directory represent. To run the benchmarks more easily we made a [rust script](./scripts/run_benchmarks.rs).
+We measured the performance of runtimes using the two benchmarks [CoreMark 1.0] and [Embench 1.0]. We automated this task using [rust script](./scripts/run_benchmarks.rs). It requires a nightly rust compiler
 
 ```sh
-$ ./run_benchmarks.rs --help
-   Compiling run_benchmarks v0.0.0 (/home/tribe11200675/ariel-runtime-size-comparisons/run_benchmarks.rs)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s
-     Running `/home/tribe11200675/.cargo/build/f0/dd2008001c8326/target/debug/run_benchmarks --help`
+$ ./scripts/run_benchmarks.rs --help
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `/home/tribe11200675/.cargo/build/69/ed28a36e155c3a/target/debug/run_benchmarks --help`
 Helper script to run benchmarks and report the results
 
 Usage: run_benchmarks.rs [OPTIONS] --benchmark <BENCHMARK> --output-file <OUTPUT_FILE> --board <BOARD> --runtime <RUNTIME>
@@ -132,63 +109,65 @@ Options:
   -b, --benchmark <BENCHMARK>      Type of benchmark to use [possible values: embench-1, embench-2, coremark]
   -o, --output-file <OUTPUT_FILE>  Output file of the benchmark results. If it exists, results will be appended to it
       --board <BOARD>              Board to run the benchmarks on
-  -r, --runtime <RUNTIME>          Runtime to evaluate defaults to wasmtime [possible values: wasmtime, wasmtime-no-simd, wasmi, wasm-interpreter, wasefire, wasefire-pulley]
+  -r, --runtime <RUNTIME>          Runtime to evaluate defaults to wasmtime [possible values: wasmtime, wasmtime-no-simd, wasmi, wasm-interpreter, wasefire, wasefire-pulley, wamr-fast, wamr-aot, wamr]
   -p, --probe <PROBE>              Probe ID used by probe-rs to disambiguate in presence of several devices
+      --arch <ARCH>                Provide the arch string required for wamr [possible values: thumbv7, thumbv8, xtensa, riscv32]
+      --monitor-heap               Monitor the Dynamic Memory usage
   -h, --help                       Print help
   -V, --version                    Print version
 ```
-
-The [emscripten] version used was `emscripten: 4.0.20 (6913738ec5371a88c4af5a80db0ab42bad3de681)` and the [`wasm-tools`] version was `wasm-tools: 1.239.0 (a64ae8dd0 2025-09-20)`.
-
-### Runtimes tested
-
-
-- [Wasmtime](github.com/bytecodealliance/wasmtime)
-- [Wasmi](https://github.com/wasmi-labs/wasmi)
-- [Wasm-interpreter](https://github.com/DLR-FT/wasm-interpreter)
-
-We originally wanted to also evaluate [`wasm3`](https://github.com/wasm3/wasm3) and [`wamr`](github.com/bytecodealliance/wasm-micro-runtime) through their rust bindings but were unable to compile the underlying C code.
-
-Further optimization were found for `wasmtime` since the initial batch of (size) testing so to keep a record of the initial numbers that were measured, these optimizations are shown separately. They consist of disabling SIMD support at compile time. This option is benchmarked separately `wasmtime` and named `wasmtime-no-simd`.
 
 ### Results
 
 #### [CoreMark 1.0]
 
-Numbers achieved on the `rpi-pico2-w` board.
-
-| wasmi | wasmtime | wasmtime-no-simd | wasm-interpreter |
-| ----- | -------- | ---------------- | ---------------- |
-| 15.37 | 13.28    | 18.62            | 0.59             |
+|                  | RP2350 | ESP-WROOM-32 | nRF52840 | ESP32-C6 |
+|------------------|--------|--------------|----------|----------|
+| WAMR             | 6.6    | 6.7          | 1.8      | 5.3      |
+| WAMR Fast        | 10.8   | 11.0         | 3.8      |8.0       |
+| Wasmi            | 15.5   | 17.3         | 4.8      | 14.5     |
+| Wasmtime         | 13.2   | 11.6         | 3.5      | 9.9      |
+| Wasmtime No SIMD | 18.6   | 11.7         | 5.1      | 12.3     |
+| Wasm Interpreter | 0.6    | 0.5          | 0.2      | 0.6      |
 
 
 #### [Embench 1.0]
-Numbers achieved on the `rpi-pico2-w` board. plots made using [a python script](./scripts/plot_results.py), requires only `matplotlib` to be run.
 
-| Scores | Timings |
-| -------| ------- |
-| <img width="1000" src="images/scores_pico2w.png"> | <img width="1000" src="images/times_pico2w.png"> |
-| <img width="1000" src="images/scores_pico2w-no-wasm-interpreter.png"> | <img width="1000" src="images/times_pico2w-no-wasm-interpreter.png"> |
+Raw results can be found [here](./results-data). The figures shown below were made using a [python script](./scripts/plot_results.py). Only the absolute execution times are shown as they are proportional with the Embench scores.
+
+##### RP2350
+
+<img width="1000" src="images/times-pico2w-all.png">
 
 
-## A brief overview of features
+<img width="1000" src="images/times-pico2w.png">
 
-[Wasmtime](github.com/bytecodealliance/wasmtime) is the flagship runtime in the rust ecosystem. It is developped by the Bytecode Alliance which is consortium that is involved with the development of new Web Assembly standards and proposals. As such, it supports by far the most features including the [WebAssembly Component Model](https://component-model.bytecodealliance.org/introduction.html) and asynchronous execution.
+#### ESP-WROOM-32
 
-[Wasmi](https://github.com/wasmi-labs/wasmi) tries to comply with the Wasmtime API but only supports synchronous execution of regular Wasm modules.
+<img width="1000" src="images/times-esp32.png">
 
-[Wasm-interpreter](https://github.com/DLR-FT/wasm-interpreter) is still not published on [crates.io](crates.io) and only supports the bare-minimum and is barely documented.
+#### nRF52840
 
-## Conclusion
+<img width="1000" src="images/times-nrf52840dk.png">
 
-[Wasmi] suffers from having the largest code size by quite a margin as and less features than [Wasmtime]. However, in most cases it is the most performance of the runtimes which while not necessarily our primary concern is of note. [Wasm-interpreter](https://github.com/DLR-FT/wasm-interpreter) is very promising but lacks too many features and is abysmally slow. [Wasmtime] is comparitvely acceptably fast while bloating our binaries significantly less than [Wasmi].
+#### ESP32-C6
 
-## Future works
-The as-of-yet closed source [Myrmic runtime](https://myrmic.org/) could be interesting and will need to be tested once it becomes open-source in early 2026.
+<img width="1000" src="images/times-esp32c6.png">
 
-Testing of [Wasefire] is also planned but hasn't yet been started.
 
-Regarding benchmarks, Embench also has a [2.0 benchmark](https://github.com/embench/embench-iot/tree/embench-2.0rc2) that hasn't been released yet but [has been used in the context of benchmarking WebAssembly for Embedded systems](https://dl.acm.org/doi/10.1145/3736169).
+## Appendix and additional information
+
+The [emscripten] version used was `emscripten: 4.0.20 (6913738ec5371a88c4af5a80db0ab42bad3de681)`.
+For the [Embench 1.0] snippets, we had to manually set the number of memory pages used to 2 because 1 wasn't enough in some cases. We achieved that by translating from Wasm to Wat, modify the Wat directly and then translate Wat back to Wasm. This was done using [`wasm-tools`] whose version was `wasm-tools: 1.239.0 (a64ae8dd0 2025-09-20)`.
+
+
+The script for running the benchmarks works well for every runtime expect WAMR. For Wamr, specifically on the ESP32-C6, a proper compiler need to be explicitly passed through the `TARGET_CC` environment variable. The compiler we recommaend is the one from ESP IDF. Below are instructions to do just that
+```sh
+git clone -b v5.5.2 --recursive https://github.com/espressif/esp-idf.git
+cd ~/esp-idf
+./install.sh esp32c6
+```
+Then, after `source`-ing `path/to/esp-idf/export.sh`, using `TARGET_CC=riscv32-esp-elf-gcc` should work.
 
 
 [Wasmi]: https://github.com/wasmi-labs/wasmi
