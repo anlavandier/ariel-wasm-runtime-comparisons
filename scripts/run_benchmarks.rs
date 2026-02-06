@@ -38,6 +38,14 @@ struct Args {
     /// Probe ID used by probe-rs to disambiguate in presence of several devices
     #[arg(short, long)]
     probe: Option<String>,
+
+    /// Provide the arch string required for wamr
+    #[arg(long)]
+    arch: Option<Arch>,
+
+    /// Monitor the Dynamic Memory usage
+    #[arg(long = "monitor-heap")]
+    monitor: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -76,7 +84,7 @@ impl Benchmark {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Runtime {
     Wasmtime,
     WasmtimeNoSIMD,
@@ -84,11 +92,24 @@ enum Runtime {
     WasmInterpreter,
     WasefireNative,
     WasefirePulley,
+    WamrFast,
+    WamrAOT,
+    Wamr,
 }
 
 impl ValueEnum for Runtime {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Wasmtime, Self::WasmtimeNoSIMD, Self::Wasmi, Self::WasmInterpreter, Self::WasefireNative, Self::WasefirePulley]
+        &[
+            Self::Wasmtime,
+            Self::WasmtimeNoSIMD,
+            Self::Wasmi,
+            Self::WasmInterpreter,
+            Self::WasefireNative,
+            Self::WasefirePulley,
+            Self::WamrFast,
+            Self::WamrAOT,
+            Self::Wamr,
+        ]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
@@ -99,6 +120,9 @@ impl ValueEnum for Runtime {
             Self::WasmInterpreter => Some(PossibleValue::new("wasm-interpreter")),
             Self::WasefireNative => Some(PossibleValue::new("wasefire")),
             Self::WasefirePulley => Some(PossibleValue::new("wasefire-pulley")),
+            Self::WamrFast => Some(PossibleValue::new("wamr-fast")),
+            Self::WamrAOT => Some(PossibleValue::new("wamr-aot")),
+            Self::Wamr => Some(PossibleValue::new("wamr")),
         }
     }
 }
@@ -108,7 +132,10 @@ impl Runtime {
         match self {
             Self::Wasmtime | Self::WasmtimeNoSIMD | Self::WasefirePulley => {
                 "cwasm"
-            }
+            },
+            Self::WamrAOT => {
+                "aot"
+            },
             _ => {
                 "wasm"
             }
@@ -123,6 +150,54 @@ impl Runtime {
             Self::WasmInterpreter => "wasm-interpreter",
             Self::WasefireNative => unimplemented!("This runtime isn't yet supported"),
             Self::WasefirePulley => unimplemented!("This runtime isn't yet supported"),
+            Self::WamrFast => "wamr-fast",
+            Self::WamrAOT => unimplemented!("This runtime isn't yet supported"),
+            Self::Wamr => "wamr",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Arch {
+    ThumbV7,
+    ThumbV8,
+    Xtensa,
+    RiscV32,
+}
+
+impl ValueEnum for Arch {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::ThumbV7, Self::ThumbV8, Self::Xtensa, Self::RiscV32]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        match self {
+            Self::ThumbV7 => Some(PossibleValue::new("thumbv7")),
+            Self::ThumbV8 => Some(PossibleValue::new("thumbv8")),
+            Self::Xtensa => Some(PossibleValue::new("xtensa")),
+            Self::RiscV32 => Some(PossibleValue::new("riscv32")),
+        }
+    }
+}
+
+impl Arch {
+    fn to_wamr_build_target(&self) -> &str {
+        match self {
+            Self::ThumbV7 => "THUMBV7",
+            Self::ThumbV8 => "THUMBV8.MAIN",
+            Self::Xtensa => "XTENSA",
+            Self::RiscV32 => "RISCV32",
+        }
+    }
+
+    fn from_board_name(board: &str) -> Self {
+        match board {
+            "nrf52840dk" => Self::ThumbV7,
+            "rpi-pico2-w" => Self::ThumbV8,
+            "espressif-esp32-devkitc" => Self::Xtensa,
+            "espressif-esp32c6-devkit" => Self::RiscV32,
+            "dfrobot-firebeetle2-esp32-c6" => Self::RiscV32,
+            _ => panic!("This board isn't recognized, update this script of explicitly specify the architecture"),
         }
     }
 }
@@ -141,54 +216,110 @@ fn main() -> miette::Result<()> {
     let board = args.board;
     let output_file = args.output_file;
     let probe = args.probe.unwrap_or_default();
+    let monitor_heap = args.monitor;
+    let arch = if let Some(arch) = args.arch {
+        arch
+    } else {
+        Arch::from_board_name(&board)
+    };
+
+    let mut entries = fs::read_dir(dir_path).map_err(Error::from)?.filter_map(|e| e.ok()).collect::<Vec<_>>();
+    entries.sort_by_key(|e| e.path());
+    for entry in entries {
+        match entry.path().extension().map(|ext| { ext.to_str() }).flatten() {
+            Some(extension) if extension == runtime.payload_extension() => {
+                let bench_path = entry.path().to_owned();
+                let bench_name = bench_path.file_prefix().unwrap().to_owned();
+
+                let mut laze_args = Vec::from_iter(
+                    [
+                        "build",
+                        "-s", runtime.to_laze_module(),
+                        "-s", benchmark.to_laze_module(),
+                        "-b", &board,
+                    ]
+                );
+                if monitor_heap {
+                    laze_args.extend([
+                        "-s", "dynamic-memory-measure"
+                    ]);
+                }
+
+                laze_args.push("run");
+                // FIXME: do better to know that this is indeed an esp32
+                if !board.contains("esp") {
+                    laze_args.extend([
+                        "--",
+                        "--log-format", "{s}",
+                        "--target-output-file", output_file.to_str().unwrap()
+                    ]);
+                }
 
 
-    for entry in fs::read_dir(dir_path).map_err(Error::from)? {
-        if let Ok(entry) = entry {
-            match entry.path().extension().map(|ext| { ext.to_str() }).flatten() {
-                Some(extension) if extension == runtime.payload_extension() => {
-                    let bench_path = entry.path().to_owned();
-                    let bench_name = bench_path.file_prefix().unwrap().to_owned();
-
-                    println!("BENCHMARK={:?} BENCHMARK_PATH=../{:?} laze build -s {:?} -s {:?} -b {:?} run -- --log-format \"{{s}}\" --target-output-file {:?} --probe {:?}",
-                        bench_name, bench_path, runtime.to_laze_module(), benchmark.to_laze_module(),
-                        board, output_file, probe);
-
-                    let mut laze_args = Vec::from_iter(
-                        [
-                            "build",
-                            "-s", runtime.to_laze_module(),
-                            "-s", benchmark.to_laze_module(),
-                            "-b", &board,
-                            "run",
-                            "--",
-                            "--log-format", "{s}",
-                            "--target-output-file", output_file.to_str().unwrap(),
-                        ]
-                    );
-                    match probe.as_str() {
-                        s if s == String::default() => {}
-                        _ => laze_args.extend(["--probe", &probe]),
-                    }
-
-                    let output = process::Command::new("laze")
-                        .env("BENCHMARK", bench_name.to_str().unwrap())
-                        .env("BENCHMARK_PATH", format!("../{}", bench_path.to_str().unwrap()))
-                        .args(&laze_args)
-                        .output()
-                        .map_err(Error::from)?;
-
-                    let process::Output { status, stdout: _, stderr} = output;
-
-                    if !status.success() {
-                        std::println!(
-                            "{}", String::from_utf8_lossy(&stderr)
+                match probe.as_str() {
+                    s if s == String::default() => {}
+                    _ => laze_args.extend(["--probe", &probe]),
+                }
+                match runtime {
+                    Runtime::Wamr | Runtime::WamrAOT | Runtime::WamrFast => {
+                        let cflag = match arch {
+                            Arch::ThumbV7 | Arch::ThumbV8 => {
+                                "TARGET_C_FLAG=--specs=nosys.specs "
+                            },
+                            _ => {
+                                ""
+                            }
+                        };
+                        println!(
+                            "{}={:?} {}=../{:?} {}={} {}={} {}laze {}",
+                            "BENCHMARK", bench_name,
+                            "BENCHMARK_PATH", bench_path,
+                            "WAMR_BUILD_PLATFORM", "ariel-os",
+                            "WAMR_BUILD_TARGET", arch.to_wamr_build_target(),
+                            cflag,
+                            laze_args.join(" ")
                         );
-                        break;
+                    }
+                    _ => {
+                        println!("BENCHMARK={:?} BENCHMARK_PATH=../{:?} laze {}", bench_name, bench_path, laze_args.join(" "));
                     }
                 }
-                _ => {
+
+                let mut command = process::Command::new("laze");
+                command
+                    .env("BENCHMARK", bench_name.to_str().unwrap())
+                    .env("BENCHMARK_PATH", format!("../{}", bench_path.to_str().unwrap()));
+
+                let output = match runtime {
+                    Runtime::Wamr | Runtime::WamrAOT | Runtime::WamrFast => {
+                        command
+                            .env("WAMR_BUILD_PLATFORM", "ariel-os")
+                            .env("WAMR_BUILD_TARGET", arch.to_wamr_build_target());
+                        match arch {
+                            Arch::ThumbV7 | Arch::ThumbV8 => {
+                                command.env("TARGET_C_FLAG", "--specs=nosys.specs");
+                            }
+                            _ => { }
+                        }
+                        command
+                    },
+                    _ => {
+                        command
+                    }
                 }
+                    .args(&laze_args)
+                    .output()
+                    .map_err(Error::from)?;
+
+                let process::Output { status, stdout: _, stderr} = output;
+
+                if !status.success() {
+                    std::println!(
+                        "{}", String::from_utf8_lossy(&stderr)
+                    );
+                }
+            }
+            _ => {
             }
         }
     }
