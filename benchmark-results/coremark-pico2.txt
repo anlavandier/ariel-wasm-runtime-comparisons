@@ -1,4 +1,0 @@
-coremark, 0.59970015, wasm-interpreter
-coremark, 15.375154, wasmi
-coremark, 13.280212 wasmtime
-coremark, 18.625443 wasmtime-no-simd

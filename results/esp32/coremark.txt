@@ -1,0 +1,7 @@
+# esp-wroom-32
+coremark, 11.636025, wasmtime
+coremark, 11.672698, wasmtime-no-simd
+coremark, 17.256256, wasmi
+coremark, 10.958904, wamr-fast
+coremark, 6.725361, wamr
+coremark, 0.49825612, wasm-interpreter

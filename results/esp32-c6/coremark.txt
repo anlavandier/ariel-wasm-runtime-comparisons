@@ -1,0 +1,7 @@
+# esp32-c6
+coremark, 9.937664, wasmtime
+coremark, 12.251148, wasmtime-no-simd
+coremark, 14.5348835, wasmi
+coremark, 5.313496, wamr-slow
+coremark, 7.983163, wamr
+coremark, 0.61675096, wasm-interpreter

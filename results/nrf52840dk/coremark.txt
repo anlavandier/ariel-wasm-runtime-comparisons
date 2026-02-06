@@ -1,0 +1,7 @@
+# nrf52840dk
+coremark, 1.7740982, wamr
+coremark, 3.831907, wamr-fast
+coremark, 4.81425, wasmi
+coremark, 5.0514326, wasmtime-no-simd
+coremark, 3.5163805, wasmtime
+coremark, 0.2166284, wasm-interpreter,

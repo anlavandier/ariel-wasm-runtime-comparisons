@@ -1,0 +1,7 @@
+runtime, .text, .data, .rodata, file
+wasmtime-no-simd, 314604, 8064, 70312, 16216
+wasmtime, 374612, 8064, 70344, 16216
+wasmi, 662476, 7880, 106492, 7771,
+wasm-interpreter, 276358, 4936, 32384, 7771
+wamr, 117584, 4632, 32496, 7771
+wamr-fast, 121944, 5656, 31176, 7771
