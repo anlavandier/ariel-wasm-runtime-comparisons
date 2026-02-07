@@ -1,0 +1,9 @@
+[submodule "third_party/ariel-os"]
+	path = third_party/ariel-os
+	url = https://github.com/anlavandier/ariel-os
+[submodule "third_party/esp-hal"]
+	path = third_party/esp-hal
+	url = https://github.com/anlavandier/esp-hal
+[submodule "third_party/wamr-rust-sdk"]
+	path = third_party/wamr-rust-sdk
+	url = https://github.com/anlavandier/wamr-rust-sdk
