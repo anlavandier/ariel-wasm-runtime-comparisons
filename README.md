@@ -1,4 +1,4 @@
-# Comparing WebAssembly Runtimes of Ariel OS
+# Comparing WebAssembly Runtimes on top of a Rust Emebedded OS ([Ariel OS])
 
 This repository aims to help in reproducibly benchmarking WebAssembly runtimes in the context of Ariel OS both in terms of code size and performance. Please first get introduced with Ariel OS by [getting started](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html). This uses a local (and modified) version of Ariel OS so only [Installing the build prerequisite](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html#installing-the-build-prerequisites) is required.
 
@@ -160,6 +160,7 @@ Raw results can be found [here](./results-data). The figures shown below were ma
 The [emscripten] version used was `emscripten: 4.0.20 (6913738ec5371a88c4af5a80db0ab42bad3de681)`.
 For the [Embench 1.0] snippets, we had to manually set the number of memory pages used to 2 because 1 wasn't enough in some cases. We achieved that by translating from Wasm to Wat, modify the Wat directly and then translate Wat back to Wasm. This was done using [`wasm-tools`] whose version was `wasm-tools: 1.239.0 (a64ae8dd0 2025-09-20)`.
 
+The Wasm version of the benchmarks we used is available in the [benchmarks](./benchmarks/) directory. We believe that the Wasm Port of [Embench 1.0] that we produced is the only one readily available.
 
 The script for running the benchmarks works well for every runtime expect WAMR. For Wamr, specifically on the ESP32-C6, a proper compiler need to be explicitly passed through the `TARGET_CC` environment variable. The compiler we recommaend is the one from ESP IDF. Below are instructions to do just that
 ```sh
@@ -167,6 +168,8 @@ git clone -b v5.5.2 --recursive https://github.com/espressif/esp-idf.git
 cd ~/esp-idf
 ./install.sh esp32c6
 ```
+
+
 Then, after `source`-ing `path/to/esp-idf/export.sh`, using `TARGET_CC=riscv32-esp-elf-gcc` should work.
 
 
@@ -178,3 +181,4 @@ Then, after `source`-ing `path/to/esp-idf/export.sh`, using `TARGET_CC=riscv32-e
 [emscripten]: https://github.com/emscripten-core/emscripten
 [`wasm-tools`]: https://github.com/bytecodealliance/wasm-tools
 [Wasefire]: https://github.com/google/wasefire
+[Ariel OS]: https://github.com/ariel-os/ariel-os
