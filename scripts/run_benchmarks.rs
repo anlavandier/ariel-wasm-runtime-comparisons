@@ -197,7 +197,7 @@ impl Arch {
             "espressif-esp32-devkitc" => Self::Xtensa,
             "espressif-esp32c6-devkit" => Self::RiscV32,
             "dfrobot-firebeetle2-esp32-c6" => Self::RiscV32,
-            _ => panic!("This board isn't recognized, update this script of explicitly specify the architecture"),
+            _ => panic!("This board isn't recognized, update this script or explicitly specify the architecture"),
         }
     }
 }
