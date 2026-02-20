@@ -17,7 +17,7 @@ mod run_wasm;
 #[path = "wasm_interpreter.rs"]
 mod run_wasm;
 
-#[cfg(any(feature = "wamr", feature = "wamr", feature = "wamr"))]
+#[cfg(feature = "wamr")]
 #[path = "wamr.rs"]
 mod run_wasm;
 
@@ -43,7 +43,7 @@ async fn main() {
     {
         ariel_os::debug::log::debug!("Running Embench 1.0 benchmark");
         #[allow(unused_variables)]
-        let (score_mean, score_std, times_means, times_std) = run_embench1();
+        let (score_mean, score_std, times_means, times_std) = benchmark();
 
         #[cfg(not(feature = "monitor-heap"))]
         ariel_os::debug::log::info!("{}, {}, {}, {}, {}", crate::benchmark_name!(), score_mean, score_std, times_means, times_std);
@@ -89,7 +89,7 @@ static BENCH_SCORE: [(&str, u64);  19] = [
 #[cfg(all(not(feature = "wasm-interpreter"),feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 100;
 
-#[cfg(all(feature = "wasm-interpreter",feature = "embench-1", not(feature = "monitor-heap")))]
+#[cfg(all(any(feature = "wasm-interpreter", feature = "wasefire-interpreter"),feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 10;
 
 #[cfg(all(feature = "monitor-heap", feature = "embench-1"))]
