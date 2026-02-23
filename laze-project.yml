@@ -56,6 +56,11 @@ modules:
       global:
         FEATURES:
           - ariel-runtime-size-comparisons/wamr-fast
+  - name: wasefire
+    env:
+      global:
+        FEATURES:
+          - ariel-runtime-size-comparisons/wasefire
 
   - name: dynamic-memory-measure
     env:

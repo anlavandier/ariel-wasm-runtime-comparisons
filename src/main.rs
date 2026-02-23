@@ -21,6 +21,10 @@ mod run_wasm;
 #[path = "wamr.rs"]
 mod run_wasm;
 
+#[cfg(feature = "wasefire")]
+#[path = "wasefire_interpreter.rs"]
+mod run_wasm;
+
 #[cfg(feature = "coremark")]
 use run_wasm::coremark::run_coremark as benchmark;
 
@@ -86,11 +90,14 @@ static BENCH_SCORE: [(&str, u64);  19] = [
     ("wikisort", 2_779),
 ];
 
-#[cfg(all(not(feature = "wasm-interpreter"),feature = "embench-1", not(feature = "monitor-heap")))]
+#[cfg(all(not(feature = "wasm-interpreter"), not(feature = "wasefire"),feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 100;
 
 #[cfg(all(feature = "wasm-interpreter", feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 10;
+
+#[cfg(all(feature = "wasefire", feature = "embench-1", not(feature = "monitor-heap")))]
+static BENCHMARK_LOOPS: usize = 5;
 
 #[cfg(all(feature = "monitor-heap", feature = "embench-1"))]
 static BENCHMARK_LOOPS: usize = 2;
@@ -101,7 +108,7 @@ pub mod instrumented_allocator {
     use critical_section::Mutex;
 
     #[cfg(context = "cortex-m")]
-    use ariel_os_alloc::alloc::HEAP;
+    use ariel_os_alloc::HEAP;
 
     #[cfg(context = "esp")]
     use esp_alloc::HEAP;

@@ -90,8 +90,7 @@ enum Runtime {
     WasmtimeNoSIMD,
     Wasmi,
     WasmInterpreter,
-    WasefireNative,
-    WasefirePulley,
+    WasefireInterpreter,
     WamrFast,
     WamrAOT,
     Wamr,
@@ -104,8 +103,7 @@ impl ValueEnum for Runtime {
             Self::WasmtimeNoSIMD,
             Self::Wasmi,
             Self::WasmInterpreter,
-            Self::WasefireNative,
-            Self::WasefirePulley,
+            Self::WasefireInterpreter,
             Self::WamrFast,
             Self::WamrAOT,
             Self::Wamr,
@@ -118,8 +116,7 @@ impl ValueEnum for Runtime {
             Self::WasmtimeNoSIMD => Some(PossibleValue::new("wasmtime-no-simd")),
             Self::Wasmi => Some(PossibleValue::new("wasmi")),
             Self::WasmInterpreter => Some(PossibleValue::new("wasm-interpreter")),
-            Self::WasefireNative => Some(PossibleValue::new("wasefire")),
-            Self::WasefirePulley => Some(PossibleValue::new("wasefire-pulley")),
+            Self::WasefireInterpreter => Some(PossibleValue::new("wasefire")),
             Self::WamrFast => Some(PossibleValue::new("wamr-fast")),
             Self::WamrAOT => Some(PossibleValue::new("wamr-aot")),
             Self::Wamr => Some(PossibleValue::new("wamr")),
@@ -130,7 +127,7 @@ impl ValueEnum for Runtime {
 impl Runtime {
     fn payload_extension(&self) -> &str {
         match self {
-            Self::Wasmtime | Self::WasmtimeNoSIMD | Self::WasefirePulley => {
+            Self::Wasmtime | Self::WasmtimeNoSIMD => {
                 "cwasm"
             },
             Self::WamrAOT => {
@@ -148,8 +145,7 @@ impl Runtime {
             Self::WasmtimeNoSIMD => "wasmtime-no-simd",
             Self::Wasmi => "wasmi",
             Self::WasmInterpreter => "wasm-interpreter",
-            Self::WasefireNative => unimplemented!("This runtime isn't yet supported"),
-            Self::WasefirePulley => unimplemented!("This runtime isn't yet supported"),
+            Self::WasefireInterpreter => "wasefire",
             Self::WamrFast => "wamr-fast",
             Self::WamrAOT => unimplemented!("This runtime isn't yet supported"),
             Self::Wamr => "wamr",
