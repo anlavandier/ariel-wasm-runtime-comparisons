@@ -1,7 +1,7 @@
-use wasm::{validate, RuntimeInstance, Value, HaltExecutionError};
+use wasm::{validate, Store, ExternVal, Value, HaltExecutionError};
 
 extern crate alloc;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
 #[cfg(feature = "coremark")]
 pub mod coremark {
@@ -16,14 +16,23 @@ pub mod coremark {
 
         let validation_info = validate(wasm_bytes).unwrap();
 
-        let mut instance = RuntimeInstance::new(());
+        let mut store = Store::new(());
 
-        instance.add_host_function_typed::<(), u64>("env", "clock_ms", clock_ms).unwrap();
+        let func_addr = store.func_alloc_typed::<(), u64>(clock_ms);
 
-        instance.add_module("module", &validation_info).unwrap();
+        let module = store.module_instantiate(
+            &validation_info,
+            vec![ExternVal::Func(func_addr)],
+            None,
+        ).unwrap();
 
-        let res: f32 = instance.invoke_typed(
-            &instance.get_function_by_name("module", "run").unwrap(), ()).unwrap();
+        let run_addr = store.instance_export(module.module_addr, "run").unwrap()
+            .as_func()
+            .unwrap();
+
+        let res: f32 = store.invoke_typed_without_fuel(
+            run_addr, ()
+        ).unwrap();
         return res
     }
 }
@@ -49,23 +58,30 @@ pub mod embench1 {
 
         let validation_info = validate(wasm).unwrap();
 
-        let mut instance = RuntimeInstance::new(TimeTracking(Instant::now(), Instant::now()));
+        let mut store = Store::new(TimeTracking(Instant::now(), Instant::now()));
 
-        instance.add_host_function_typed::<(), ()>("env", "initialise_board", initialise_board).unwrap();
-        instance.add_host_function_typed::<(), ()>("env", "start_trigger", start_trigger).unwrap();
-        instance.add_host_function_typed::<(), ()>("env", "stop_trigger", stop_trigger).unwrap();
+        let board_init = store.func_alloc_typed::<(), ()>(initialise_board);
+        let start_trig = store.func_alloc_typed::<(), ()>(start_trigger);
+        let stop_trig = store.func_alloc_typed::<(), ()>(stop_trigger);
 
-        instance.add_module("module", &validation_info).unwrap();
+        let module = store.module_instantiate(
+            &validation_info,
+            vec![ExternVal::Func(board_init), ExternVal::Func(start_trig), ExternVal::Func(stop_trig)],
+            None,
+        ).unwrap();
 
-        let bench_function = instance.get_function_by_name("module", "__original_main").unwrap();
+        let bench_function = store.instance_export(module.module_addr, "__original_main").unwrap()
+            .as_func()
+            .unwrap();
+
         debug!("Starting wasm app");
         let mut times_to_run = Vec::new();
         for i in 1..=BENCHMARK_LOOPS {
             debug!("Run {}", i);
-            let correct = instance.invoke_typed(&bench_function, ()).unwrap();
+            let correct = store.invoke_typed_without_fuel(bench_function, ()).unwrap();
             match correct {
                 0 => {
-                    let &TimeTracking(start, end) = instance.user_data();
+                    let &TimeTracking(start, end) = &store.user_data;
                     // The relative speed is in milli seconds
                     times_to_run.push((end - start).as_millis());
                 },
