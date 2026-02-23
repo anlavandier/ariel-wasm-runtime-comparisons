@@ -22,7 +22,7 @@ mod run_wasm;
 mod run_wasm;
 
 #[cfg(feature = "coremark")]
-use run_wasm::run_coremark as benchmark;
+use run_wasm::coremark::run_coremark as benchmark;
 
 #[cfg(feature = "embench-1")]
 use run_wasm::embench1::run_bench as run_embench1;
@@ -43,7 +43,7 @@ async fn main() {
     {
         ariel_os::debug::log::debug!("Running Embench 1.0 benchmark");
         #[allow(unused_variables)]
-        let (score_mean, score_std, times_means, times_std) = benchmark();
+        let (score_mean, score_std, times_means, times_std) = run_embench1();
 
         #[cfg(not(feature = "monitor-heap"))]
         ariel_os::debug::log::info!("{}, {}, {}, {}, {}", crate::benchmark_name!(), score_mean, score_std, times_means, times_std);
@@ -89,7 +89,7 @@ static BENCH_SCORE: [(&str, u64);  19] = [
 #[cfg(all(not(feature = "wasm-interpreter"),feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 100;
 
-#[cfg(all(any(feature = "wasm-interpreter", feature = "wasefire-interpreter"),feature = "embench-1", not(feature = "monitor-heap")))]
+#[cfg(all(feature = "wasm-interpreter", feature = "embench-1", not(feature = "monitor-heap")))]
 static BENCHMARK_LOOPS: usize = 10;
 
 #[cfg(all(feature = "monitor-heap", feature = "embench-1"))]

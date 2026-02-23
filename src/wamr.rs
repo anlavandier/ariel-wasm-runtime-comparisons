@@ -9,39 +9,39 @@ use alloc::{vec, vec::Vec};
 // Required to pull the tinyrlibc code that implements extern "C" functions needed by wamr
 extern crate tinyrlibc;
 
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "The extern 'C' functions are actually used")]
 use tinyrlibc as _;
 
-#[cfg(feature = "coremark")]
-extern "C" fn clock_ms() -> u64 {
-    ariel_os::time::Instant::now().as_millis()
+pub mod coremark {
+    use super::*;
+    extern "C" fn clock_ms() -> u64 {
+        ariel_os::time::Instant::now().as_millis()
+    }
+
+    pub fn run_coremark() -> f32 {
+        let wasm_bytes = Vec::from(include_bytes!(crate::benchmark_file!()));
+
+        let runtime = Runtime::builder_with_module_name("env")
+            .use_system_allocator()
+            .run_as_interpreter()
+            .register_host_function("clock_ms",  clock_ms as *mut c_void)
+            .build().unwrap();
+
+        let module = Module::from_vec(&runtime, wasm_bytes, "test-module").unwrap();
+
+        // 2KiB stack size
+        let instance = Instance::new(&runtime, &module, 1024 * 2).unwrap();
+
+        let function = Function::find_export_func(&instance, "run").unwrap();
+
+        let res = function.call(&instance, &vec![])
+            .unwrap().into_iter().next().unwrap()
+            .into_f32()
+            .unwrap();
+
+        return res;
+    }
 }
-
-#[cfg(feature = "coremark")]
-pub fn run_coremark() -> f32 {
-    let wasm_bytes = Vec::from(include_bytes!(crate::benchmark_file!()));
-
-    let runtime = Runtime::builder_with_module_name("env")
-        .use_system_allocator()
-        .run_as_interpreter()
-        .register_host_function("clock_ms",  clock_ms as *mut c_void)
-        .build().unwrap();
-
-    let module = Module::from_vec(&runtime, wasm_bytes, "test-module").unwrap();
-
-    // 2KiB stack size
-    let instance = Instance::new(&runtime, &module, 1024 * 2).unwrap();
-
-    let function = Function::find_export_func(&instance, "run").unwrap();
-
-    let res = function.call(&instance, &vec![])
-        .unwrap().into_iter().next().unwrap()
-        .into_f32()
-        .unwrap();
-
-    return res;
-}
-
 
 
 

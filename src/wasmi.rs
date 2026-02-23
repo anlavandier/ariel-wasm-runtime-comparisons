@@ -1,27 +1,30 @@
 use wasmi::{Caller, Config, Engine, Linker, Module, Store};
 
 #[cfg(feature = "coremark")]
-pub fn run_coremark() -> f32 {
+pub mod coremark {
+    use super::*;
+    pub fn run_coremark() -> f32 {
 
-    let wasm = include_bytes!(crate::benchmark_file!());
+        let wasm = include_bytes!(crate::benchmark_file!());
 
-    let config = Config::default();
+        let config = Config::default();
 
-    // config.floats(false);
+        // config.floats(false);
 
-    let engine = Engine::new(&config);
-    let mut store = Store::new(&engine, ());
+        let engine = Engine::new(&config);
+        let mut store = Store::new(&engine, ());
 
-    let module = unsafe { Module::new_unchecked(&engine, wasm).unwrap() };
+        let module = unsafe { Module::new_unchecked(&engine, wasm).unwrap() };
 
-    let mut linker = Linker::new(&engine);
+        let mut linker = Linker::new(&engine);
 
-    linker.func_wrap("env", "clock_ms", |_: Caller<'_, _>| { ariel_os::time::Instant::now().as_millis() }).unwrap();
+        linker.func_wrap("env", "clock_ms", |_: Caller<'_, _>| { ariel_os::time::Instant::now().as_millis() }).unwrap();
 
-    let instance = linker.instantiate_and_start(&mut store, &module).unwrap();
+        let instance = linker.instantiate_and_start(&mut store, &module).unwrap();
 
-    instance.get_typed_func::<(), f32>(&mut store, "run").unwrap()
-        .call(&mut store, ()).unwrap()
+        instance.get_typed_func::<(), f32>(&mut store, "run").unwrap()
+            .call(&mut store, ()).unwrap()
+    }
 }
 
 #[cfg(feature = "embench-1")]

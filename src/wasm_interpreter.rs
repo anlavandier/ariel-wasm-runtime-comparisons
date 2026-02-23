@@ -4,27 +4,29 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 #[cfg(feature = "coremark")]
-fn clock_ms(_: &mut (), _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-    Ok(Vec::from_iter(core::iter::once(Value::I64(ariel_os::time::Instant::now().as_millis()))))
+pub mod coremark {
+    use super::*;
+
+    fn clock_ms(_: &mut (), _: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+        Ok(Vec::from_iter(core::iter::once(Value::I64(ariel_os::time::Instant::now().as_millis()))))
+    }
+
+    pub fn run_coremark() -> f32 {
+        let wasm_bytes = include_bytes!(crate::benchmark_file!());
+
+        let validation_info = validate(wasm_bytes).unwrap();
+
+        let mut instance = RuntimeInstance::new(());
+
+        instance.add_host_function_typed::<(), u64>("env", "clock_ms", clock_ms).unwrap();
+
+        instance.add_module("module", &validation_info).unwrap();
+
+        let res: f32 = instance.invoke_typed(
+            &instance.get_function_by_name("module", "run").unwrap(), ()).unwrap();
+        return res
+    }
 }
-
-#[cfg(feature = "coremark")]
-pub fn run_coremark() -> f32 {
-    let wasm_bytes = include_bytes!(crate::benchmark_file!());
-
-    let validation_info = validate(wasm_bytes).unwrap();
-
-    let mut instance = RuntimeInstance::new(());
-
-    instance.add_host_function_typed::<(), u64>("env", "clock_ms", clock_ms).unwrap();
-
-    instance.add_module("module", &validation_info).unwrap();
-
-    let res: f32 = instance.invoke_typed(
-        &instance.get_function_by_name("module", "run").unwrap(), ()).unwrap();
-    return res
-}
-
 
 #[cfg(feature = "embench-1")]
 pub mod embench1 {

@@ -1,46 +1,49 @@
 use wasmtime::{Caller, Config, Engine, Linker, Module, Store};
 
 #[cfg(feature = "coremark")]
-pub fn run_coremark() -> f32 {
-    let wasm_input = include_bytes!(crate::benchmark_file!());
+pub mod coremark {
+    use super::*;
 
-    let mut config = Config::new();
+    pub fn run_coremark() -> f32 {
+        let wasm_input = include_bytes!(crate::benchmark_file!());
 
-    // Options that must conform with the precompilation step
-    config.target("pulley32").unwrap();
+        let mut config = Config::new();
 
-    config.wasm_custom_page_sizes(true);
+        // Options that must conform with the precompilation step
+        config.target("pulley32").unwrap();
 
-    config.table_lazy_init(false);
-    config.memory_reservation(0);
-    config.memory_init_cow(false);
-    config.memory_may_move(false);
+        config.wasm_custom_page_sizes(true);
 
-    // Options that can be changed without changing the payload
-    config.max_wasm_stack(2048);
-    config.memory_reservation_for_growth(0);
+        config.table_lazy_init(false);
+        config.memory_reservation(0);
+        config.memory_init_cow(false);
+        config.memory_may_move(false);
 
-    let engine = Engine::new(&config).unwrap();
+        // Options that can be changed without changing the payload
+        config.max_wasm_stack(2048);
+        config.memory_reservation_for_growth(0);
 
-    let mut store = Store::new(&engine, ());
+        let engine = Engine::new(&config).unwrap();
 
-    // SAFETY: This is a known input produced by Engine::precompile_module
-    // Also, deserialize_raw reuse the given memory instead of copying it.
-    let module = unsafe { Module::deserialize_raw(&engine, wasm_input.as_slice().into()).unwrap() };
+        let mut store = Store::new(&engine, ());
 
-    let mut linker = Linker::new(&engine);
+        // SAFETY: This is a known input produced by Engine::precompile_module
+        // Also, deserialize_raw reuse the given memory instead of copying it.
+        let module = unsafe { Module::deserialize_raw(&engine, wasm_input.as_slice().into()).unwrap() };
 
-    // Define the imported host function
-    linker.func_wrap("env", "clock_ms", |_: Caller<'_, _>| { ariel_os::time::Instant::now().as_millis() }).unwrap();
+        let mut linker = Linker::new(&engine);
 
-    // Instantiate the Module
-    let instance = linker.instantiate(&mut store, &module).unwrap();
+        // Define the imported host function
+        linker.func_wrap("env", "clock_ms", |_: Caller<'_, _>| { ariel_os::time::Instant::now().as_millis() }).unwrap();
 
-    // call add_with_extra
-    instance.get_typed_func::<(), f32>(&mut store, "run").unwrap()
-        .call(&mut store, ()).unwrap()
+        // Instantiate the Module
+        let instance = linker.instantiate(&mut store, &module).unwrap();
+
+        // call run
+        instance.get_typed_func::<(), f32>(&mut store, "run").unwrap()
+            .call(&mut store, ()).unwrap()
+    }
 }
-
 
 #[cfg(feature = "embench-1")]
 pub mod embench1 {
