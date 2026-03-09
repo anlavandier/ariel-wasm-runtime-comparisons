@@ -8,7 +8,7 @@ ariel-os = { path = "build/imports/ariel-os/src/ariel-os", features = ["time", "
 ariel-os-boards = { path = "build/imports/ariel-os/src/ariel-os-boards" }
 
 # Runtimes to evaluate, latest stable release as of 20th of February 2026
-wasmtime = {version = "=41.0.3",  default-features = false, features = ["runtime", "pulley"], optional = true }
+wasmtime = {version = "=42.0.1",  default-features = false, features = ["runtime", "pulley"], optional = true }
 wasmi = { version = "=1.0.9", default-features = false, optional = true }
 wasm-interpreter = {git = "https://github.com/DLR-FT/wasm-interpreter", tag="v0.1.0", default-features = false, optional = true }
 wamr-rust-sdk = { path = "third_party/wamr-rust-sdk", default-features = false, optional = true }
