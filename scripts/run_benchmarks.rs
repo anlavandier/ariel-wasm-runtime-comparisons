@@ -260,7 +260,7 @@ fn main() -> miette::Result<()> {
                     Runtime::Wamr | Runtime::WamrAOT | Runtime::WamrFast => {
                         let cflag = match arch {
                             Arch::ThumbV7 | Arch::ThumbV8 => {
-                                "TARGET_C_FLAG=--specs=nosys.specs "
+                                "TARGET_CFLAGS=--specs=nosys.specs "
                             },
                             _ => {
                                 ""
@@ -293,7 +293,7 @@ fn main() -> miette::Result<()> {
                             .env("WAMR_BUILD_TARGET", arch.to_wamr_build_target());
                         match arch {
                             Arch::ThumbV7 | Arch::ThumbV8 => {
-                                command.env("TARGET_C_FLAG", "--specs=nosys.specs");
+                                command.env("TARGET_CFLAGS", "--specs=nosys.specs");
                             }
                             _ => { }
                         }
