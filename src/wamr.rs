@@ -9,9 +9,10 @@ use alloc::{vec, vec::Vec};
 // Required to pull the tinyrlibc code that implements extern "C" functions needed by wamr
 extern crate tinyrlibc;
 
-#[allow(unused_imports, reason = "The extern 'C' functions are actually used")]
+#[allow(unused_imports, reason = "The extern \"C\" functions are actually used")]
 use tinyrlibc as _;
 
+#[cfg(feature = "coremark")]
 pub mod coremark {
     use super::*;
     extern "C" fn clock_ms() -> u64 {
