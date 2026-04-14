@@ -3,6 +3,10 @@
 This repository aims to help in reproducibly benchmarking WebAssembly runtimes in the context of Ariel OS both in terms of code size and performance. Please first get introduced with Ariel OS by [getting started](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html). This uses a local (and modified) version of Ariel OS so only [Installing the build prerequisite](https://ariel-os.github.io/ariel-os/dev/docs/book/getting-started.html#installing-the-build-prerequisites) is required. After cloning the repository and initializing the submodules with `git submodule update --init --recursive`.
 Use `laze build -b nrf52840dk` before using the scripts to initialize the symlinks.
 
+> [!IMPORTANT]
+> Part of the work present in this repo was showcased in DCOSS IoT 2026. The state of the repository at this time can be found under the [`v1`](https://github.com/anlavandier/ariel-wasm-runtime-comparisons/tree/v1) tag.
+
+
 ## Setup
 
 ### Runtimes tested
