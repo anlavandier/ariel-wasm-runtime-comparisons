@@ -4,7 +4,7 @@ This repository aims to help in reproducibly benchmarking WebAssembly runtimes i
 Use `laze build -b nrf52840dk` before using the scripts to initialize the symlinks.
 
 > [!IMPORTANT]
-> Part of the work present in this repo was showcased in DCOSS IoT 2026. The state of the repository at this time can be found under the [`v1`](https://github.com/anlavandier/ariel-wasm-runtime-comparisons/tree/v1) tag.
+> Part of the work present in this repo was showcased in DCOSS IoT 2026. The state of the repository at this time can be found under the [`dcoss-2026-camera-ready`](https://github.com/anlavandier/ariel-wasm-runtime-comparisons/tree/dcoss-2026-camera-ready) tag.
 
 
 ## Setup
