@@ -3,6 +3,7 @@ import numpy as np
 import sys
 
 def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
+    plt.rcParams.update({"font.size": 30})
     peak_ram_usage: dict[str, dict[str, int]] = {}
     runtimes: set[str] = []
     for (runtime_name, file_name) in paths:
@@ -13,6 +14,11 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
                 splitted: list[str] = line.split(',')
                 assert len(splitted) >= 4
                 name: str = splitted[0]
+                if name == "sglib-combined":
+                    name = "sglib"
+                # Nbody is a useless benchmark because it gets optimized out
+                elif name == "nbody":
+                    continue
                 peak_usage = int(splitted[1]) + int(splitted[2]) + int(splitted[3])
                 try:
                     peak_ram_usage[name][runtime_name] = peak_usage
@@ -32,7 +38,11 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
         runtimes.append("wasm-interpreter")
     except ValueError:
         pass
-
+    try:
+        runtimes.remove("wasefire")
+        runtimes.append("wasefire")
+    except KeyError:
+        pass
 
     n_runtimes = len(runtimes)
     cur_runtime = runtimes[0]
@@ -66,12 +76,13 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
         xmin=-0.2,
         xmax=len(peak_ram_usage),
         linestyles="dotted",
-        label="Wasm Linear Memory",
-        colors="black"
+        label="Linear memory",
+        colors="black",
+        linewidths = 5
     )
     ax.tick_params(axis = 'x', labelrotation=45)
     ax.set_ylabel("Peak RAM usage (bytes)")
-    ax.legend()
+    ax.legend(ncols=2)
     plt.show()
 
 

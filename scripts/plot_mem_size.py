@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_size(paths: list[(str, str)]):
+    plt.rcParams.update({"font.size": 30})
     size: dict[str, dict[str, int]] = {}
     runtimes: set[str] = set()
     for hardware, file in paths:
@@ -19,8 +20,17 @@ def plot_size(paths: list[(str, str)]):
     _fig, ax = plt.subplots()
     size = dict(sorted([(key, dict(sorted(val.items()))) for (key, val) in size.items()]))
     runtimes = list(sorted(runtimes))
-    runtimes.remove("wasm-interpreter")
-    runtimes.append("wasm-interpreter")
+    try:
+        runtimes.remove("wasm-interpreter")
+        runtimes.append("wasm-interpreter")
+    except KeyError:
+        pass
+    try:
+        runtimes.remove("wasefire")
+        runtimes.append("wasefire")
+    except KeyError:
+        pass
+
     n_runtimes = len(runtimes)
     cur_runtime = runtimes[0]
 
@@ -46,8 +56,8 @@ def plot_size(paths: list[(str, str)]):
             label = cur_runtime,
         )
     ax.tick_params(axis = 'x', labelrotation=45)
-    ax.set_ylabel("Peak RAM usage memory size (bytes)")
-    ax.legend()
+    ax.set_ylabel("Memory footprint (bytes)")
+    ax.legend(ncols = 2)
 
     plt.show()
 

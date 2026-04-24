@@ -3,6 +3,7 @@ import numpy as np
 import sys
 
 def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
+    plt.rcParams.update({'font.size': 30})
     # Geometric Mean + geometric standard dev
     scores: dict[str, dict[str, tuple[float, float]]] = {}
     times: dict[str, dict[str, tuple[float, float]]] = {}
@@ -16,6 +17,11 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
                 splitted: list[str] = line.split(',')
                 assert len(splitted) == 5
                 name: str = splitted[0]
+                if name == "sglib-combined":
+                    name = "sglib"
+                # Nbody is a useless benchmark because it gets optimized out
+                elif name == "nbody":
+                    continue
                 score_m: float = float(splitted[1])
                 score_std: float = float(splitted[2])
                 times_m: float = float(splitted[3])
@@ -36,6 +42,7 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
     _fig_score, ax_score = plt.subplots()
     scores = dict(sorted(scores.items()))
     times = dict(sorted(times.items()))
+    runtime_names = sorted(runtime_names)
     n_runtimes = len(runtime_names)
 
     # Embench Scores
@@ -101,7 +108,10 @@ def plot_benchmark(benchmark: str, paths: list[(str, str)], board: str):
         )
     ax_time.set_ylabel("Time (ms)")
     ax_time.tick_params(axis='x', labelrotation=45)
+
     ax_time.legend()
+    # for tick in ax_time.get_xticklabels():
+        # tick.set_fontsize(15)
 
     plt.show()
 
