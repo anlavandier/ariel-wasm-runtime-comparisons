@@ -5,3 +5,4 @@ coremark, 4.81425, wasmi
 coremark, 5.0514326, wasmtime-no-simd
 coremark, 3.5163805, wasmtime
 coremark, 0.2166284, wasm-interpreter,
+coremark, 0.06343648, wasefire,

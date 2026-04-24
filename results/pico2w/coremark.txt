@@ -5,3 +5,4 @@ coremark, 13.280212, wasmtime
 coremark, 18.625443, wasmtime-no-simd
 coremark, 10.848928, wamr-fast
 coremark, 6.6229153, wamr
+coremark, 0.18569067, wasefire

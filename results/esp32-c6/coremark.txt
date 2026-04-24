@@ -5,3 +5,4 @@ coremark, 14.5348835, wasmi
 coremark, 5.313496, wamr-slow
 coremark, 7.983163, wamr
 coremark, 0.61675096, wasm-interpreter
+coremark, 0.2664606, wasefire
